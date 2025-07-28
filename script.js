@@ -45,14 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isSidebarExpanded) {
             gsap.to(sidebarNav, {
                 duration: 0.3,
-                left: '0%', // Changed from x to left
+                left: '0vw', // Changed to 0vw
                 ease: "power2.out"
             });
             sidebar.classList.add('expanded');
         } else {
             gsap.to(sidebarNav, {
                 duration: 0.3,
-                left: '-100%', // Changed from x to left
+                left: '-100vw', // Changed to -100vw
                 ease: "power2.in"
             });
             sidebar.classList.remove('expanded');
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isSidebarExpanded && !sidebar.contains(e.target) && window.innerWidth <= 768) {
             gsap.to(sidebarNav, {
                 duration: 0.3,
-                left: '-100%', // Changed from x to left
+                left: '-100vw', // Changed to -100vw
                 ease: "power2.in"
             });
             sidebar.classList.remove('expanded');
