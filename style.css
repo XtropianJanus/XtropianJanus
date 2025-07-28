@@ -555,39 +555,28 @@ body {
     }
 
     .sidebar.collapsed {
-        /* GSAP will animate this */
-        /* transform: translateX(-100%); */
-    }
-
-    .sidebar-header {
-        margin-bottom: 0;
-    }
-
-    .sidebar-header h2 {
-        font-size: 1.5em;
-    }
-
-    .menu-toggle {
-        display: block; /* Show on mobile */
+        /* This class is no longer strictly needed for the transform, but can be kept */
     }
 
     .sidebar-nav {
         position: absolute;
         top: 60px; /* Below the header */
-        left: 0;
+        left: -100%; /* HIDDEN by default - this is the key change */
         width: 100%;
         height: calc(100vh - 60px); /* Full height below header */
         background-color: var(--header-bg);
-        transform: translateX(-100%); /* Hidden by default */
-        transition: transform 0.3s ease-in-out;
+        /* Remove transform: translateX(-100%); from here */
+        transition: left 0.3s ease-in-out; /* Changed transition property */
         padding: 20px;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
         z-index: 9;
         overflow-y: auto;
+        overflow-x: hidden; /* Ensure no horizontal scroll within sidebar-nav */
     }
 
     .sidebar.expanded .sidebar-nav {
-        transform: translateX(0); /* Show when expanded */
+        left: 0; /* SHOW when expanded - this is the key change */
+        /* Remove transform: translateX(0); from here */
     }
 
     .chat-area {
