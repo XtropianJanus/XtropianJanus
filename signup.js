@@ -45,12 +45,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayAuthMessage(signupMessage, ack.err);
             } else {
                 console.log("Account created:", ack.pub);
-                // Save display name to user's public profile
-                user.get('profile').put({ displayname: displayname, role: 'user' }, (putAck) => {
-                    if (putAck.err) console.error("Error saving profile:", putAck.err);
+                // --- FIX: Authenticate the user immediately after creation before saving profile data ---
+                user.auth(alias, password, (authAck) => {
+                    if (authAck.err) {
+                        console.error("Auto-login after signup failed:", authAck.err);
+                        displayAuthMessage(signupMessage, `Account created, but auto-login failed: ${authAck.err}. Please try logging in.`, true);
+                        // Redirect to login page only if auto-auth fails
+                        window.location.href = 'login.html';
+                    } else {
+                        console.log("Auto-logged in after signup. Saving profile...");
+                        // Now that the user is authenticated, save the display name to their profile
+                        user.get('profile').put({ displayname: displayname, role: 'user' }, (putAck) => {
+                            if (putAck.err) {
+                                console.error("Error saving profile after signup:", putAck.err);
+                                displayAuthMessage(signupMessage, `Account created, but profile save failed: ${putAck.err}.`, true);
+                            } else {
+                                console.log("Profile saved successfully after signup.");
+                                displayAuthMessage(signupMessage, "Account created! Redirecting to chatroom...", false);
+                                // Redirect to the main chatroom page after successful profile save
+                                window.location.href = 'index.html';
+                            }
+                        });
+                    }
                 });
-                displayAuthMessage(signupMessage, "Account created! Redirecting to login...", false);
-                window.location.href = 'login.html';
             }
         });
     });
