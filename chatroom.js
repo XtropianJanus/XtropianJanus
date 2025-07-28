@@ -4,11 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = gun.user();
 
     // --- Global Chatroom State ---
-    let currentChatroomRef = null;
-    let currentChatroomID = null;
-    let currentMessageListener = null;
-    let currentUserDisplayName = 'Anonymous';
-    let currentUserRole = 'user';
+    let currentChatroomRef = null; // Gun reference to the currently active chatroom
+    let currentChatroomID = null;   // ID of the currently active chatroom
+    let currentMessageListener = null; // Stores the listener function for current chatroom messages
+    let currentUserDisplayName = 'Anonymous'; // Default for initial messages or if profile not loaded yet
+    let currentUserRole = 'user'; // Default role
 
 
     // --- DOM Elements ---
@@ -29,10 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewPendingBtn = document.getElementById('view-pending-btn');
     const chatroomModal = document.getElementById('chatroom-modal');
     const pendingModal = document.getElementById('pending-modal');
-    const chatroomList = document.getElementById('chatroom-list');
-    const currentChatroomNameHeader = document.getElementById('current-chatroom-name');
+    const chatroomList = document.getElementById('chatroom-list'); // Reference to the UL for chatrooms
+    const currentChatroomNameHeader = document.getElementById('current-chatroom-name'); // Header for current chatroom name
 
-    // NEW ADMIN DOM ELEMENTS
+    // ADMIN DOM ELEMENTS
     const manageUsersBtn = document.getElementById('manage-users-btn');
     const userManagementModal = document.getElementById('user-management-modal');
     const userManagementList = document.getElementById('user-management-list');
@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Helper Functions ---
+    // Function to get current user's role and display name
     async function fetchUserProfile() {
         return new Promise(resolve => {
             if (!user.is) {
@@ -83,6 +84,10 @@ document.addEventListener('DOMContentLoaded', () => {
             messageDiv.classList.add('incoming');
         }
 
+        // Generate a unique ID for the message element to prevent re-adding on subsequent map.once calls
+        const messageId = `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        messageDiv.dataset.messageId = messageId; // Add data attribute for lookup
+
         const avatarInitial = sender.charAt(0).toUpperCase();
         const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -104,47 +109,90 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        messagesContainer.appendChild(messageDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        // Check if message already exists before appending
+        if (!messagesContainer.querySelector(`[data-message-id="${messageId}"]`)) {
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        gsap.from(messageDiv, {
-            duration: 0.5,
-            y: 30,
-            opacity: 0,
-            scale: 0.9,
-            ease: "back.out(1.7)",
-            clearProps: "all"
-        });
+            gsap.from(messageDiv, {
+                duration: 0.5,
+                y: 30,
+                opacity: 0,
+                scale: 0.9,
+                ease: "back.out(1.7)",
+                clearProps: "all"
+            });
+        }
     }
 
     // --- Chatroom Management Functions ---
 
+    // Function to load and display chatrooms in the sidebar
     function loadChatrooms() {
+        // Clear existing listeners for this specific `map().on` to prevent multiple instances
+        // and ensure the list is built correctly on updates.
+        // We'll clear the entire list and rebuild it, which is simpler for smaller lists.
         chatroomList.innerHTML = '';
         gun.get('chatrooms').map().on((chatroomData, chatroomID) => {
-            if (chatroomData && chatroomData.status === 'approved') {
-                const li = document.createElement('li');
-                li.textContent = `#${chatroomData.name}`;
-                li.dataset.chatroomId = chatroomID;
-                li.addEventListener('click', () => switchChatroom(chatroomID, chatroomData.name));
+            // Only add if data is valid and chatroom is approved
+            if (chatroomData && chatroomData.name && chatroomData.status === 'approved') {
+                // Check if element already exists to prevent duplicates from .on()
+                if (!document.querySelector(`#chatroom-list li[data-chatroom-id="${chatroomID}"]`)) {
+                    const li = document.createElement('li');
+                    li.textContent = `#${chatroomData.name}`;
+                    li.dataset.chatroomId = chatroomID;
+                    li.addEventListener('click', () => switchChatroom(chatroomID, chatroomData.name));
 
-                if (chatroomID === currentChatroomID) {
-                    li.classList.add('active');
+                    // Add active class if it's the current chatroom
+                    if (chatroomID === currentChatroomID) {
+                        li.classList.add('active');
+                    }
+                    chatroomList.appendChild(li);
                 }
-                chatroomList.appendChild(li);
+            } else if (chatroomData === null || (chatroomData && chatroomData.status !== 'approved')) {
+                // Handle deletion or status change: remove from UI if it was approved and now deleted/nullified/rejected
+                const existingLi = document.querySelector(`#chatroom-list li[data-chatroom-id="${chatroomID}"]`);
+                if (existingLi) {
+                    existingLi.remove();
+                    // If the deleted chatroom was the current one, switch to general or prompt user
+                    if (chatroomID === currentChatroomID) {
+                        currentChatroomID = null;
+                        currentChatroomRef = null;
+                        messagesContainer.innerHTML = '<h2>Chatroom deleted or no longer available. Please select another.</h2>';
+                        currentChatroomNameHeader.textContent = 'No Chatroom Selected';
+                        if(currentMessageListener) {
+                            // Ensure old listener is detached
+                            gun.get('chatrooms').get(chatroomID).get('messages').map().off(currentMessageListener);
+                            currentMessageListener = null;
+                        }
+                        // Try to switch to general if available
+                        gun.get('chatrooms').map().once((data, id) => {
+                            if (data && data.name === 'general' && data.status === 'approved') {
+                                switchChatroom(id, 'general');
+                            }
+                        });
+                    }
+                }
             }
         });
     }
 
+    // Function to switch to a different chatroom
     function switchChatroom(newChatroomID, newChatroomName) {
-        if (currentMessageListener) {
+        // 1. Stop listening to old messages
+        if (currentMessageListener && currentChatroomRef) {
             currentChatroomRef.get('messages').map().off(currentMessageListener);
             currentMessageListener = null;
+            console.log(`Detached listener from old chatroom: ${currentChatroomID}`);
         }
 
+        // 2. Clear current messages from UI
         messagesContainer.innerHTML = '';
         currentChatroomNameHeader.textContent = `#${newChatroomName}`;
+        console.log(`Switched to chatroom: #${newChatroomName} (${newChatroomID})`);
 
+
+        // 3. Update active chatroom in sidebar UI
         document.querySelectorAll('#chatroom-list li').forEach(li => {
             li.classList.remove('active');
             if (li.dataset.chatroomId === newChatroomID) {
@@ -152,17 +200,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // 4. Set new current chatroom reference and ID
         currentChatroomID = newChatroomID;
         currentChatroomRef = gun.get('chatrooms').get(newChatroomID);
 
+        // 5. Load historical messages first, then attach listener for new messages
+        // Use .once() to load existing messages. Gun delivers these in arbitrary order, so sorting would be needed for many messages.
+        const loadedMessageIds = new Set(); // To prevent duplicates from .once() and .on()
+        currentChatroomRef.get('messages').map().once((messageData, messageID) => {
+            if (messageData && (messageData.text || messageData.imageData || messageData.imageUrl) && !loadedMessageIds.has(messageID)) {
+                loadedMessageIds.add(messageID);
+                gun.get('~' + messageData.sender).get('profile').once(profile => {
+                    const senderDisplayName = profile && profile.displayname ? profile.displayname : messageData.sender.slice(0, 5) + '...';
+                    const isOutgoing = user.is && messageData.sender === user.is.pub;
+                    addNewMessage(messageData.text, senderDisplayName, isOutgoing, messageData.imageData, messageData.imageUrl);
+                });
+            }
+        });
+
+        // Now attach the .on() listener for future messages
         currentMessageListener = (messageData, messageID) => {
-            if (messageData && (messageData.text || messageData.imageData || messageData.imageUrl)) {
-                const isOutgoing = user.is && messageData.sender === currentUserDisplayName;
-                addNewMessage(messageData.text, messageData.sender, isOutgoing, messageData.imageData, messageData.imageUrl);
+            if (messageData && (messageData.text || messageData.imageData || messageData.imageUrl) && !loadedMessageIds.has(messageID)) {
+                loadedMessageIds.add(messageID); // Add to set for new messages too
+                gun.get('~' + messageData.sender).get('profile').once(profile => {
+                    const senderDisplayName = profile && profile.displayname ? profile.displayname : messageData.sender.slice(0, 5) + '...';
+                    const isOutgoing = user.is && messageData.sender === user.is.pub;
+                    addNewMessage(messageData.text, senderDisplayName, isOutgoing, messageData.imageData, messageData.imageUrl);
+                });
+            } else if (messageData === null && loadedMessageIds.has(messageID)) {
+                // Handle message deletion (if a message is nullified in Gun)
+                const existingMsgDiv = messagesContainer.querySelector(`[data-message-id="${messageID}"]`);
+                if (existingMsgDiv) {
+                    existingMsgDiv.remove();
+                    loadedMessageIds.delete(messageID);
+                }
             }
         };
         currentChatroomRef.get('messages').map().on(currentMessageListener);
 
+
+        // Close sidebar on mobile after switching
         if (window.innerWidth <= 768 && isSidebarExpanded) {
             gsap.to(sidebarNav, { duration: 0.3, left: '-100vw', ease: "power2.in" });
             sidebar.classList.remove('expanded');
@@ -170,69 +247,79 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function createDefaultChatroomIfNeeded() {
-        gun.get('chatrooms').once(allChatrooms => {
-            let generalExists = false;
-            let generalChatroomID = null;
-            if (allChatrooms) {
-                for (const key in allChatrooms) {
-                    if (allChatrooms.hasOwnProperty(key) && allChatrooms[key] && allChatrooms[key].name === 'general' && allChatrooms[key].status === 'approved') {
-                        generalExists = true;
-                        generalChatroomID = key;
-                        break;
+    // Function to ensure a default chatroom is active (or create it)
+    async function ensureDefaultChatroomActive() {
+        return new Promise(resolve => {
+            let foundGeneral = false;
+            // Use a temporary listener to find the 'general' chatroom
+            const tempListener = (chatroomData, chatroomID) => {
+                if (chatroomData && chatroomData.name === 'general' && chatroomData.status === 'approved') {
+                    if (!foundGeneral) {
+                        console.log("Found #general chatroom, switching to it.");
+                        switchChatroom(chatroomID, chatroomData.name);
+                        foundGeneral = true;
+                        resolve(true);
+                        // Once found, detach this temporary listener
+                        gun.get('chatrooms').map().off(tempListener); // Detach specific listener instance
                     }
                 }
-            }
+            };
+            // Attach the temporary listener
+            gun.get('chatrooms').map().on(tempListener);
 
-            if (!generalExists) {
-                console.log("Creating default #general chatroom...");
-                gun.get('chatrooms').set({
-                    name: 'general',
-                    description: 'The main chatroom for everyone!',
-                    creator: 'System',
-                    status: 'approved',
-                    createdAt: Date.now()
-                }, (ack) => {
-                    if (ack.err) {
-                        console.error("Error creating default chatroom:", ack.err);
-                    } else {
-                        console.log("Default #general chatroom created.");
-                        // After creation, reload chatrooms and switch to it
-                        loadChatrooms();
-                        gun.get('chatrooms').map().once((chatroomData, chatroomID) => {
-                            if (chatroomData && chatroomData.name === 'general' && chatroomData.status === 'approved') {
-                                switchChatroom(chatroomID, chatroomData.name);
-                            }
-                        });
-                    }
-                });
-            } else {
-                switchChatroom(generalChatroomID, 'general');
-            }
+            // If after a short timeout, 'general' is not found, create it
+            setTimeout(() => {
+                if (!foundGeneral) {
+                    console.log("No #general chatroom found, attempting to create.");
+                    gun.get('chatrooms').set({
+                        name: 'general',
+                        description: 'The main chatroom for everyone!',
+                        creator: 'System',
+                        status: 'approved',
+                        createdAt: Date.now()
+                    }, (ack) => {
+                        if (ack.err) {
+                            console.error("Error creating default chatroom:", ack.err);
+                            resolve(false);
+                        } else {
+                            console.log("Default #general chatroom creation initiated. Waiting for Gun to sync and switch.");
+                            // The tempListener should now pick up the newly created chatroom and trigger switchChatroom
+                            resolve(true);
+                        }
+                    });
+                } else {
+                    // If it was found within the timeout by tempListener, ensure resolve is called.
+                    resolve(true);
+                }
+            }, 2000); // Increased timeout to 2 seconds for slower networks
         });
     }
 
-    // --- User Management Functions (NEW) ---
+    // --- User Management Functions ---
 
-    // Function to load all user profiles for management
     function loadUserManagementList() {
-        userManagementList.innerHTML = ''; // Clear existing list
-        userManagementMessage.textContent = ''; // Clear previous messages
+        userManagementList.innerHTML = '';
+        userManagementMessage.textContent = '';
 
-        // Iterate over all users known to Gun
-        // This is not efficient for many users in a production app; typically you'd have a backend API
-        // or a dedicated Gun graph structure for user directories.
-        gun.get('~').map().on(async (userAliasData, userPub) => {
-            // userAliasData might be just the alias, or null for revoked users.
-            // We need to get the public key from the alias, then fetch the profile.
-            if (userPub && userPub !== user.is.pub) { // Don't list current user or null entries
+        // Gun's '~' graph contains all user public keys mapped to aliases
+        gun.get('~').map().on(async (aliasData, userPub) => {
+            // aliasData here is just the alias string, userPub is the public key
+            if (userPub && userPub !== user.is.pub) { // Don't list current user
                 // Fetch the actual profile data using the public key
                 gun.get('~' + userPub).get('profile').once(profileData => {
-                    if (profileData) {
-                        const displayname = profileData.displayname || userPub.slice(0, 5) + '...';
-                        const role = profileData.role || 'user';
+                    const displayname = profileData && profileData.displayname ? profileData.displayname : userPub.slice(0, 5) + '...';
+                    const role = profileData && profileData.role ? profileData.role : 'user';
 
+                    // Check if the user's LI element already exists to avoid duplicates from .on()
+                    let existingLi = document.querySelector(`#user-management-list li[data-user-pub="${userPub}"]`);
+                    if (existingLi) {
+                        // Update existing entry
+                        existingLi.querySelector('span').textContent = `${displayname} (${role})`;
+                        existingLi.querySelector('select').value = role;
+                    } else {
+                        // Create new entry
                         const li = document.createElement('li');
+                        li.dataset.userPub = userPub; // Store public key on the LI
                         li.innerHTML = `
                             <span>${displayname} (${role})</span>
                             <select data-user-pub="${userPub}">
@@ -245,6 +332,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         userManagementList.appendChild(li);
                     }
                 });
+            } else if (aliasData === null) { // User was deleted/nullified (e.g., if alias put(null))
+                const existingLi = document.querySelector(`#user-management-list li[data-user-pub="${userPub}"]`);
+                if (existingLi) {
+                    existingLi.remove();
+                }
             }
         });
     }
@@ -262,24 +354,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Prevent an admin from demoting themselves or changing their own role via this panel
             if (targetUserPub === user.is.pub) {
                 userManagementMessage.textContent = "You cannot change your own role via this panel.";
                 userManagementMessage.style.color = 'var(--danger-color)';
                 return;
             }
 
-            // Update the user's profile on Gun
             gun.get('~' + targetUserPub).get('profile').get('role').put(newRole, (ack) => {
                 if (ack.err) {
                     console.error("Error updating role:", ack.err);
                     userManagementMessage.textContent = `Failed to update role for ${targetUserPub.slice(0, 5)}...: ${ack.err}`;
                     userManagementMessage.style.color = 'var(--danger-color)';
                 } else {
-                    userManagementMessage.textContent = `Role for ${targetUserPub.slice(0, 5)}... updated to ${newRole}!`;
-                    userManagementMessage.style.color = 'var(--success-color)';
-                    // Reload the list to show updated role
-                    loadUserManagementList();
+                    // Fetch display name for success message
+                    gun.get('~' + targetUserPub).get('profile').get('displayname').once(displayName => {
+                        userManagementMessage.textContent = `Role for ${displayName || targetUserPub.slice(0,5)+'...'} updated to ${newRole}!`;
+                        userManagementMessage.style.color = 'var(--success-color)';
+                    });
+                    // The .map().on listener for loadUserManagementList will automatically update the UI
                 }
             });
         }
@@ -287,7 +379,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Admin Bootstrap Function (FOR DEMO ONLY) ---
-    // Expose this function globally for easy access from browser console
     window.bootstrapAdminRole = async function() {
         if (!user.is) {
             console.warn("Please log in first to bootstrap admin role.");
@@ -301,7 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 console.log("Role set to admin successfully! Please refresh the page.");
                 alert("Your role has been set to admin. Please refresh the page to see changes.");
-                // Force a reload to re-fetch profile and update UI
                 location.reload();
             }
         });
@@ -310,14 +400,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Check for Login Status ---
     user.recall({ sessionStorage: true }, async (ack) => {
-        if (!user.is) { // If not logged in
+        if (!user.is) {
             console.log("Not logged in, redirecting to login page.");
-            window.location.href = 'login.html'; // Redirect to login page
+            window.location.href = 'login.html';
         } else {
             console.log("Session recalled. Logged in as:", user.is.pub);
             await fetchUserProfile(); // Fetch user profile and set display name/role
 
-            // Animate the app container's initial appearance
             gsap.from(appContainer, {
                 duration: 1.5,
                 scale: 0.9,
@@ -340,19 +429,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 delay: 0.9
             });
 
-            loadChatrooms();
-            createDefaultChatroomIfNeeded();
+            loadChatrooms(); // Start listening for chatroom list updates
+            await ensureDefaultChatroomActive(); // Ensure a chatroom is selected and active
         }
     });
 
     // --- Logout Logic ---
     logoutBtn.addEventListener('click', () => {
+        if (currentMessageListener && currentChatroomRef) {
+            currentChatroomRef.get('messages').map().off(currentMessageListener);
+            currentMessageListener = null;
+        }
         user.leave();
         console.log("Logged out, redirecting to login page.");
         window.location.href = 'login.html';
     });
 
-    // --- Chat App Event Listeners (with login checks) ---
+    // --- Chat App Event Listeners ---
 
     // Sidebar toggle
     let isSidebarExpanded = false;
@@ -386,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (text) {
             currentChatroomRef.get('messages').set({
                 text: text,
-                sender: currentUserDisplayName,
+                sender: user.is.pub, // Store public key as sender for accurate display name lookup
                 timestamp: Date.now()
             }, (ack) => {
                 if (ack.err) {
@@ -422,7 +515,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const imageDataUrl = e.target.result;
                 currentChatroomRef.get('messages').set({
                     imageData: imageDataUrl,
-                    sender: currentUserDisplayName,
+                    sender: user.is.pub, // Store public key as sender
                     timestamp: Date.now()
                 }, (ack) => {
                     if (ack.err) {
@@ -491,21 +584,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         gun.get('chatrooms').map().on((chatroomData, chatroomID) => {
             if (chatroomData && chatroomData.status === 'pending') {
-                const li = document.createElement('li');
-                li.innerHTML = `
-                    <span>#${chatroomData.name} (by ${chatroomData.creator || 'Unknown'})</span>
-                    <button class="btn success-btn approve-btn" data-chatroom-id="${chatroomID}">Approve</button>
-                    <button class="btn danger-btn reject-btn" data-chatroom-id="${chatroomID}">Reject</button>
-                `;
-                pendingList.appendChild(li);
-                gsap.from(li, { duration: 0.4, y: 20, opacity: 0, ease: "power2.out" });
+                // Check if element already exists to prevent duplicates from .on()
+                if (!document.querySelector(`#pending-list li[data-chatroom-id="${chatroomID}"]`)) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>#${chatroomData.name} (by ${chatroomData.creator || 'Unknown'})</span>
+                        <button class="btn success-btn approve-btn" data-chatroom-id="${chatroomID}">Approve</button>
+                        <button class="btn danger-btn reject-btn" data-chatroom-id="${chatroomID}">Reject</button>
+                    `;
+                    pendingList.appendChild(li);
+                    gsap.from(li, { duration: 0.4, y: 20, opacity: 0, ease: "power2.out" });
+                }
+            } else if (chatroomData === null || chatroomData.status === 'approved' || chatroomData.status === 'rejected') {
+                // Remove from pending list if it was approved, rejected, or deleted
+                const existingLi = document.querySelector(`#pending-list li[data-chatroom-id="${chatroomID}"]`);
+                if (existingLi) {
+                    existingLi.remove();
+                }
             }
         });
 
         openModal(pendingModal);
     });
 
-    // NEW: Manage Users Button Click
+    // Manage Users Button Click
     manageUsersBtn.addEventListener('click', async () => {
         if (!user.is || currentUserRole !== 'admin') {
             alert("You must be an admin to manage users.");
@@ -522,7 +624,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    [chatroomModal, pendingModal, userManagementModal].forEach(modal => { // Added userManagementModal
+    [chatroomModal, pendingModal, userManagementModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 closeModal(modal);
@@ -544,38 +646,53 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Check if chatroom with this name already exists
-        let nameExists = false;
-        gun.get('chatrooms').map().once((data) => {
-            if (data && data.name === chatroomName) {
-                nameExists = true;
-            }
+        // IMPROVED: Check if chatroom with this name already exists more reliably
+        const checkPromise = new Promise(resolve => {
+            let found = false;
+            // Use a temporary listener that detaches itself once it finds a match or finishes iterating
+            const tempCheckListener = gun.get('chatrooms').map().on(function(data) {
+                if (data && data.name === chatroomName) {
+                    found = true;
+                }
+                // Detach the listener after a short delay to ensure it had time to check existing data
+                // This is still a heuristic, a dedicated index would be better.
+                setTimeout(() => {
+                    this.off(); // Detach the listener
+                    resolve(found);
+                }, 50); // Short delay
+            });
+            // Fallback timeout in case map().on doesn't trigger for empty sets or very fast resolution
+            setTimeout(() => {
+                if (!found) {
+                    tempCheckListener.off(); // Ensure it's off if timeout hits first
+                    resolve(false);
+                }
+            }, 500); // Max wait for check
         });
 
-        // Small delay to allow 'once' to complete. In a real app, use a Promise/async-await pattern
-        setTimeout(() => {
-            if (nameExists) {
-                alert(`Chatroom with name "${chatroomName}" already exists. Please choose a different name.`);
-                return;
-            }
+        const nameExists = await checkPromise;
 
-            gun.get('chatrooms').set({
-                name: chatroomName,
-                description: chatroomDesc,
-                creator: currentUserDisplayName,
-                status: 'pending',
-                createdAt: Date.now()
-            }, (ack) => {
-                if (ack.err) {
-                    console.error("Error requesting chatroom creation:", ack.err);
-                    alert("Failed to request chatroom. Please try again.");
-                } else {
-                    console.log(`Chatroom "${chatroomName}" request submitted successfully. Waiting for approval.`);
-                    alert(`Chatroom "${chatroomName}" submitted for approval!`);
-                    closeModal(chatroomModal);
-                }
-            });
-        }, 100); // Short delay
+        if (nameExists) {
+            alert(`Chatroom with name "${chatroomName}" already exists. Please choose a different name.`);
+            return;
+        }
+
+        gun.get('chatrooms').set({
+            name: chatroomName,
+            description: chatroomDesc,
+            creator: currentUserDisplayName,
+            status: 'pending',
+            createdAt: Date.now()
+        }, (ack) => {
+            if (ack.err) {
+                console.error("Error requesting chatroom creation:", ack.err);
+                alert("Failed to request chatroom. Please try again.");
+            } else {
+                console.log(`Chatroom "${chatroomName}" request submitted successfully. Waiting for approval.`);
+                alert(`Chatroom "${chatroomName}" submitted for approval!`);
+                closeModal(chatroomModal);
+            }
+        });
     });
 
     document.getElementById('pending-list').addEventListener('click', async (e) => {
@@ -601,7 +718,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     gsap.to(e.target.closest('li'), {
                         duration: 0.3, opacity: 0, x: 50, ease: "power2.in", onComplete: () => {
                             e.target.closest('li').remove();
-                            loadChatrooms();
+                            // loadChatrooms() is now handled by the .map().on listener which will update the list
                         }
                     });
                 }
