@@ -1,35 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- Gun.js Initialization ---
-    // Connect to a public Gun peer. For production, consider running your own.
     const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
-    const user = gun.user(); // Get the Gun user module
+    const user = gun.user();
 
-    // --- DOM Elements ---
-    const authScreen = document.getElementById('auth-screen');
+    // --- DOM Elements (only chatroom related) ---
     const appContainer = document.getElementById('app-container');
-
-    // Auth Form Elements
-    const showLoginBtn = document.getElementById('show-login');
-    const showSignupBtn = document.getElementById('show-signup');
-    const loginForm = document.getElementById('login-form');
-    const signupForm = document.getElementById('signup-form');
-    const loginMessage = document.getElementById('login-message');
-    const signupMessage = document.getElementById('signup-message');
-
-    // Login Form Inputs
-    const loginAliasInput = document.getElementById('login-alias');
-    const loginPasswordInput = document.getElementById('login-password');
-
-    // Signup Form Inputs
-    const signupAliasInput = document.getElementById('signup-alias');
-    const signupPasswordInput = document.getElementById('signup-password');
-    const signupDisplaynameInput = document.getElementById('signup-displayname');
-
-    // App Elements
     const currentUserDisplaynameSpan = document.getElementById('current-user-displayname');
     const logoutBtn = document.getElementById('logout-btn');
-    const adminSection = document.getElementById('admin-section'); // For admin/mod specific controls
-
+    const adminSection = document.getElementById('admin-section');
 
     const sidebar = document.querySelector('.sidebar');
     const menuToggle = document.querySelector('.menu-toggle');
@@ -44,38 +22,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatroomModal = document.getElementById('chatroom-modal');
     const pendingModal = document.getElementById('pending-modal');
 
-    // --- Helper Functions ---
-
-    // Function to display messages on auth forms
-    function displayAuthMessage(element, message, isError = true) {
-        element.textContent = message;
-        element.style.color = isError ? 'var(--danger-color)' : 'var(--success-color)';
-        gsap.fromTo(element, { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.3 });
-    }
-
-    // Function to toggle between login and signup forms
-    function toggleAuthForm(showForm) {
-        if (showForm === 'login') {
-            loginForm.classList.remove('hidden');
-            signupForm.classList.add('hidden');
-            showLoginBtn.classList.add('active');
-            showSignupBtn.classList.remove('active');
+    // --- Initial Check for Login Status ---
+    user.recall({ sessionStorage: true }, (ack) => {
+        if (!user.is) { // If not logged in
+            console.log("Not logged in, redirecting to login page.");
+            window.location.href = 'login.html'; // Redirect to login page
         } else {
-            loginForm.classList.add('hidden');
-            signupForm.classList.remove('hidden');
-            showLoginBtn.classList.remove('active');
-            showSignupBtn.classList.add('active');
-        }
-        loginMessage.textContent = ''; // Clear messages on toggle
-        signupMessage.textContent = '';
-    }
-
-    // Function to update UI based on login status
-    function updateUI(loggedIn) {
-        if (loggedIn) {
-            authScreen.classList.add('hidden');
-            appContainer.classList.remove('hidden');
-            // Initial animation for app container when logging in
+            console.log("Session recalled. Logged in as:", user.is.pub);
+            // Animate the app container's initial appearance
             gsap.from(appContainer, {
                 duration: 1.5,
                 scale: 0.9,
@@ -102,140 +56,40 @@ document.addEventListener('DOMContentLoaded', () => {
             user.get('profile').on(profile => {
                 if (profile && profile.displayname) {
                     currentUserDisplaynameSpan.textContent = `Welcome, ${profile.displayname}!`;
+                } else {
+                    currentUserDisplaynameSpan.textContent = `Welcome, ${user.is.pub.slice(0, 5)}...!`;
                 }
-                if (profile && profile.role === 'admin' || profile.role === 'moderator') {
+                if (profile && (profile.role === 'admin' || profile.role === 'moderator')) {
                     adminSection.classList.remove('hidden');
                 } else {
                     adminSection.classList.add('hidden');
                 }
             });
 
-            // Initialize chat specific logic (like listening for messages)
-            // For now, we'll keep the dummy messages, but you'd load real chat data here
+            // Initial messages (assuming general chatroom)
             messagesContainer.innerHTML = ''; // Clear initial dummy messages
             addNewMessage('Hey everyone, welcome to the chat!', 'Alice', false);
             addNewMessage('Thanks, Alice! Looking forward to this. Check out this link: https://gsap.com', 'You', true);
             addNewMessage('Cool! I\'m sharing a pic from my trip:', 'Bob', false, null, 'https://via.placeholder.com/200x150?text=Sample+Image');
-
-
-        } else {
-            authScreen.classList.remove('hidden');
-            appContainer.classList.add('hidden');
-            currentUserDisplaynameSpan.textContent = ''; // Clear display name
-            adminSection.classList.add('hidden'); // Hide admin section
         }
-    }
+    });
 
-    // Function to get current user's role (simplified)
+    // --- Logout Logic ---
+    logoutBtn.addEventListener('click', () => {
+        user.leave();
+        console.log("Logged out, redirecting to login page.");
+        window.location.href = 'login.html'; // Redirect to login page
+    });
+
+    // --- Helper Functions ---
     async function getCurrentUserRole() {
         return new Promise(resolve => {
-            if (!user.is) return resolve(null); // Not logged in
+            if (!user.is) return resolve(null);
             user.get('profile').once(data => {
-                resolve(data ? data.role : 'user'); // Default to 'user' if no role found
+                resolve(data ? data.role : 'user');
             });
         });
     }
-
-    // --- Event Listeners for Auth Forms ---
-
-    showLoginBtn.addEventListener('click', () => toggleAuthForm('login'));
-    showSignupBtn.addEventListener('click', () => toggleAuthForm('signup'));
-
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const alias = loginAliasInput.value;
-        const password = loginPasswordInput.value;
-
-        user.auth(alias, password, (ack) => {
-            if (ack.err) {
-                console.error("Login failed:", ack.err);
-                displayAuthMessage(loginMessage, ack.err);
-            } else {
-                console.log("Logged in as:", ack.pub);
-                displayAuthMessage(loginMessage, "Login successful!", false);
-                // Clear inputs
-                loginAliasInput.value = '';
-                loginPasswordInput.value = '';
-                updateUI(true); // Show the main app
-            }
-        });
-    });
-
-    signupForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const alias = signupAliasInput.value;
-        const password = signupPasswordInput.value;
-        const displayname = signupDisplaynameInput.value;
-
-        if (!displayname.trim()) {
-            displayAuthMessage(signupMessage, "Display name cannot be empty.");
-            return;
-        }
-
-        user.create(alias, password, (ack) => {
-            if (ack.err) {
-                console.error("Sign up failed:", ack.err);
-                displayAuthMessage(signupMessage, ack.err);
-            } else {
-                console.log("Account created:", ack.pub);
-                displayAuthMessage(signupMessage, "Account created! You can now log in.", false);
-                // Save display name to user's public profile
-                user.get('profile').put({ displayname: displayname, role: 'user' }, (putAck) => {
-                    if (putAck.err) console.error("Error saving profile:", putAck.err);
-                });
-                // Automatically log in after successful creation
-                user.auth(alias, password, (authAck) => {
-                    if (authAck.err) {
-                        console.error("Auto-login failed:", authAck.err);
-                        toggleAuthForm('login'); // Redirect to login if auto-auth fails
-                    } else {
-                        console.log("Auto-logged in after signup.");
-                        // Clear inputs
-                        signupAliasInput.value = '';
-                        signupPasswordInput.value = '';
-                        signupDisplaynameInput.value = '';
-                        updateUI(true); // Show the main app
-                    }
-                });
-            }
-        });
-    });
-
-    logoutBtn.addEventListener('click', () => {
-        user.leave();
-        console.log("Logged out.");
-        updateUI(false); // Show the auth screen
-        // Optionally, clear chat messages on logout
-        messagesContainer.innerHTML = '';
-        gsap.to(appContainer, { duration: 0.5, opacity: 0, scale: 0.9, onComplete: () => {
-            appContainer.classList.add('hidden');
-            authScreen.classList.remove('hidden');
-            gsap.fromTo(authScreen, { opacity: 0 }, { opacity: 1, duration: 0.5 });
-        }});
-    });
-
-
-    // --- Existing Chat App Logic (Modified for User Context) ---
-
-    let isSidebarExpanded = false;
-    menuToggle.addEventListener('click', () => {
-        isSidebarExpanded = !isSidebarExpanded;
-        if (isSidebarExpanded) {
-            gsap.to(sidebarNav, { duration: 0.3, left: '0vw', ease: "power2.out" });
-            sidebar.classList.add('expanded');
-        } else {
-            gsap.to(sidebarNav, { duration: 0.3, left: '-100vw', ease: "power2.in" });
-            sidebar.classList.remove('expanded');
-        }
-    });
-
-    document.body.addEventListener('click', (e) => {
-        if (isSidebarExpanded && !sidebar.contains(e.target) && window.innerWidth <= 768) {
-            gsap.to(sidebarNav, { duration: 0.3, left: '-100vw', ease: "power2.in" });
-            sidebar.classList.remove('expanded');
-            isSidebarExpanded = false;
-        }
-    });
 
     function linkify(text) {
         const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+?\.[^\s]+)|([a-zA-Z0-9.\-]+?\.(com|org|net|gov|edu|io|co|uk|dev|app)[^\s]*)/g;
@@ -248,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Modified addNewMessage to use current logged-in user's display name
     function addNewMessage(messageContent, sender, isOutgoing = false, imageData = null, imageUrl = null) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
@@ -292,14 +145,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    async function getCurrentUserDisplayName() {
+        return new Promise(resolve => {
+            if (!user.is) return resolve(null);
+            user.get('profile').once(data => {
+                resolve(data ? data.displayname : user.is.pub.slice(0, 5) + '...');
+            });
+        });
+    }
+
+    // --- Chat App Event Listeners (with login checks) ---
+
+    // Sidebar toggle (no changes needed)
+    let isSidebarExpanded = false;
+    menuToggle.addEventListener('click', () => {
+        isSidebarExpanded = !isSidebarExpanded;
+        if (isSidebarExpanded) {
+            gsap.to(sidebarNav, { duration: 0.3, left: '0vw', ease: "power2.out" });
+            sidebar.classList.add('expanded');
+        } else {
+            gsap.to(sidebarNav, { duration: 0.3, left: '-100vw', ease: "power2.in" });
+            sidebar.classList.remove('expanded');
+        }
+    });
+
+    document.body.addEventListener('click', (e) => {
+        if (isSidebarExpanded && !sidebar.contains(e.target) && window.innerWidth <= 768) {
+            gsap.to(sidebarNav, { duration: 0.3, left: '-100vw', ease: "power2.in" });
+            sidebar.classList.remove('expanded');
+            isSidebarExpanded = false;
+        }
+    });
+
+    // Send Message
     sendMessageBtn.addEventListener('click', async () => {
         const text = messageInput.value.trim();
-        if (!user.is) { // Check if user is logged in
+        if (!user.is) {
             alert("Please log in to send messages.");
             return;
         }
-        const senderProfile = await getCurrentUserDisplayName(); // Get actual display name
-        const senderName = senderProfile || 'Anonymous'; // Fallback
+        const senderProfile = await getCurrentUserDisplayName();
+        const senderName = senderProfile || 'Anonymous';
 
         if (text) {
             addNewMessage(text, senderName, true);
@@ -310,17 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Helper to get current user's display name
-    async function getCurrentUserDisplayName() {
-        return new Promise(resolve => {
-            if (!user.is) return resolve(null);
-            user.get('profile').once(data => {
-                resolve(data ? data.displayname : user.is.pub.slice(0, 5) + '...'); // Fallback to truncated public key
-            });
-        });
-    }
-
-
+    // Attach File
     attachBtn.addEventListener('click', () => {
         if (!user.is) {
             alert("Please log in to upload images.");
@@ -357,7 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.style.height = messageInput.scrollHeight + 'px';
     });
 
-    // Modal Open/Close Animations (no changes here)
+    // Modals (with login/role checks)
     function openModal(modalElement) {
         modalElement.style.display = 'flex';
         gsap.to(modalElement.querySelector('.modal-content'), {
@@ -395,7 +271,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("You do not have permission to view pending chatrooms.");
             return;
         }
-        // In a real app, you'd fetch pending rooms here
         const pendingList = document.getElementById('pending-list');
         if (pendingList.children.length === 0) {
              const dummyItem = document.createElement('li');
@@ -427,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('create-chatroom-form').addEventListener('submit', async (e) => {
         e.preventDefault();
         const role = await getCurrentUserRole();
-        if (!user.is) { // Double check login
+        if (!user.is) {
             alert("Please log in to create a chatroom.");
             return;
         }
@@ -436,7 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Requesting chatroom: ${chatroomName}, Description: ${chatroomDesc}`);
         alert(`Chatroom "${chatroomName}" submitted for approval!`);
         closeModal(chatroomModal);
-        // Integrate with gun.js requestChatroomCreation(chatroomName, chatroomDesc);
     });
 
     document.getElementById('pending-list').addEventListener('click', async (e) => {
@@ -450,32 +324,10 @@ document.addEventListener('DOMContentLoaded', () => {
             gsap.to(e.target.closest('li'), {
                 duration: 0.3, opacity: 0, x: 50, ease: "power2.in", onComplete: () => e.target.closest('li').remove()
             });
-            // Integrate with gun.js approveChatroom(id);
         } else if (e.target.classList.contains('reject-btn')) {
             alert('Chatroom Rejected!');
             gsap.to(e.target.closest('li'), {
                 duration: 0.3, opacity: 0, x: -50, ease: "power2.in", onComplete: () => e.target.closest('li').remove()
-            });
-            // Integrate with gun.js rejectChatroom(id);
-        }
-    });
-
-    // --- Initial Check on Load ---
-    // Check if user is already logged in (e.g., from a previous session)
-    user.recall({ sessionStorage: true }, (ack) => {
-        if (ack.err) {
-            console.warn("No active session or recall error:", ack.err);
-            updateUI(false); // Show login screen
-        } else {
-            console.log("Session recalled. Logged in as:", ack.pub);
-            // Fetch user profile immediately after recall
-            user.get('profile').once(profile => {
-                if (!profile) {
-                    // If profile doesn't exist (e.g., old account without displayname)
-                    // You might want to prompt for display name or set a default.
-                    user.get('profile').put({ displayname: user.is.pub.slice(0, 5) + '...', role: 'user' });
-                }
-                updateUI(true); // Show main app
             });
         }
     });
