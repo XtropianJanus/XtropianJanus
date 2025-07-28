@@ -548,24 +548,19 @@ body {
         min-width: unset;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
-        position: relative; /* For the absolute positioned nav */
+        position: relative; /* Keep relative for correct positioning of the menu toggle button */
         padding: 10px 20px;
         z-index: 10;
         transform: translateY(0); /* Ensure it's visible */
     }
 
-    .sidebar.collapsed {
-        /* This class is no longer strictly needed for the transform, but can be kept */
-    }
-
     .sidebar-nav {
-        position: absolute;
+        position: fixed; /* Changed to fixed to position relative to viewport */
         top: 60px; /* Below the header */
-        left: -100%; /* HIDDEN by default - this is the key change */
-        width: 100%;
+        left: -100vw; /* HIDDEN by default, using 100vw for full viewport width */
+        width: 100vw; /* Use 100vw for full viewport width */
         height: calc(100vh - 60px); /* Full height below header */
         background-color: var(--header-bg);
-        /* Remove transform: translateX(-100%); from here */
         transition: left 0.3s ease-in-out; /* Changed transition property */
         padding: 20px;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
@@ -575,8 +570,7 @@ body {
     }
 
     .sidebar.expanded .sidebar-nav {
-        left: 0; /* SHOW when expanded - this is the key change */
-        /* Remove transform: translateX(0); from here */
+        left: 0; /* SHOW when expanded, spanning full viewport width */
     }
 
     .chat-area {
