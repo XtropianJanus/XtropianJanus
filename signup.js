@@ -45,13 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 displayAuthMessage(signupMessage, ack.err);
             } else {
                 console.log("Account created:", ack.pub);
-                // --- FIX: Authenticate the user immediately after creation before saving profile data ---
+                // Authenticate the user immediately after creation
                 user.auth(alias, password, (authAck) => {
                     if (authAck.err) {
                         console.error("Auto-login after signup failed:", authAck.err);
                         displayAuthMessage(signupMessage, `Account created, but auto-login failed: ${authAck.err}. Please try logging in.`, true);
                         // Redirect to login page only if auto-auth fails
-                        window.location.href = 'login.html';
+                        setTimeout(() => { // Small delay before redirecting
+                            window.location.href = 'login.html';
+                        }, 500);
                     } else {
                         console.log("Auto-logged in after signup. Saving profile...");
                         // Now that the user is authenticated, save the display name to their profile
@@ -59,11 +61,17 @@ document.addEventListener('DOMContentLoaded', () => {
                             if (putAck.err) {
                                 console.error("Error saving profile after signup:", putAck.err);
                                 displayAuthMessage(signupMessage, `Account created, but profile save failed: ${putAck.err}.`, true);
+                                // Even if put fails, we can still try to go to chat, but user might not have correct display name
+                                setTimeout(() => {
+                                    window.location.href = 'index.html';
+                                }, 1000); // Longer delay if profile save failed
                             } else {
-                                console.log("Profile saved successfully after signup.");
+                                console.log("Profile saved successfully after signup. Redirecting to chatroom...");
                                 displayAuthMessage(signupMessage, "Account created! Redirecting to chatroom...", false);
-                                // Redirect to the main chatroom page after successful profile save
-                                window.location.href = 'index.html';
+                                // CRITICAL FIX: Add a short delay before redirecting to allow Gun to synchronize
+                                setTimeout(() => {
+                                    window.location.href = 'index.html';
+                                }, 750); // Increased delay to 750ms for better synchronization
                             }
                         });
                     }
