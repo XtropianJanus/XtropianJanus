@@ -21,10 +21,19 @@
     --scroll-track: #272534;
 }
 
+/* Universal box-sizing for predictable layout */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+/* Ensure HTML and Body fill the viewport and control overflow precisely */
+html, body {
+    height: 100%; /* Make sure they take full height */
+    width: 100%;  /* Make sure they take full width */
+    overflow-x: hidden; /* Prevent horizontal scrollbars always */
+    overflow-y: auto;   /* Allow vertical scrollbars only when content exceeds height */
 }
 
 body {
@@ -34,24 +43,24 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    min-height: 100vh;
-    overflow: hidden; /* Prevent scrollbar on initial load animations */
+    min-height: 100vh; /* Ensures body is at least viewport height */
+    /* REMOVED: overflow: hidden; from body directly to allow fixed elements to render freely */
 }
 
-/* App Container */
+/* App Container - main chat window */
 .app-container {
     display: flex;
     width: 95vw;
     height: 95vh;
-    max-width: 1400px;
-    max-height: 900px;
+    max-width: 1400px; /* Max width for larger screens */
+    max-height: 900px; /* Max height for larger screens */
     background-color: var(--card-bg);
     border-radius: 12px;
-    overflow: hidden;
+    overflow: hidden; /* Important: keeps internal content within app bounds */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-/* Sidebar */
+/* Sidebar (Desktop view) */
 .sidebar {
     width: 300px;
     min-width: 250px;
@@ -60,7 +69,8 @@ body {
     display: flex;
     flex-direction: column;
     border-right: 1px solid var(--border-color);
-    transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+    /* No transition for transform here, handled by JS for mobile */
+    transition: width 0.3s ease-in-out; /* Only for desktop resizing if implemented */
 }
 
 .sidebar-header {
@@ -88,8 +98,8 @@ body {
 
 .sidebar-nav {
     flex-grow: 1;
-    overflow-y: auto;
-    padding-right: 10px; /* For scrollbar */
+    overflow-y: auto; /* Allows scrolling within the nav if content overflows */
+    padding-right: 10px; /* For scrollbar space */
 }
 
 .sidebar-nav::-webkit-scrollbar {
@@ -127,8 +137,7 @@ body {
 }
 
 .sidebar-nav li:hover {
-    /* Using rgba for primary-color with 0.1 opacity */
-    background-color: rgba(87, 60, 250, 0.1);
+    background-color: rgba(87, 60, 250, 0.1); /* Using rgba for primary-color with 0.1 opacity */
     color: var(--primary-color);
 }
 
@@ -241,7 +250,7 @@ body {
 .messages-container {
     flex-grow: 1;
     padding: 20px;
-    overflow-y: auto;
+    overflow-y: auto; /* Allows messages to scroll */
     display: flex;
     flex-direction: column; /* For proper message flow */
 }
@@ -426,7 +435,7 @@ body {
     top: 0;
     width: 100%; /* Full width */
     height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
+    overflow: auto; /* Enable scroll if modal content exceeds viewport */
     background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
     justify-content: center;
     align-items: center;
@@ -528,6 +537,7 @@ body {
 
 /* Responsive Design */
 @media (max-width: 1024px) {
+    /* For tablets/laptops, make the app container full screen */
     .app-container {
         width: 100vw;
         height: 100vh;
@@ -542,40 +552,45 @@ body {
         flex-direction: column;
     }
 
+    /* Fixed header for mobile */
     .sidebar {
         width: 100%;
         height: 60px; /* Collapsed height */
         min-width: unset;
         border-right: none;
         border-bottom: 1px solid var(--border-color);
-        position: relative; /* Keep relative for correct positioning of the menu toggle button */
+        position: relative; /* Important for positioning menu toggle button */
         padding: 10px 20px;
-        z-index: 10;
-        transform: translateY(0); /* Ensure it's visible */
+        z-index: 10; /* Ensure it's above other content */
     }
 
+    /* Mobile navigation overlay */
     .sidebar-nav {
-        position: fixed; /* Changed to fixed to position relative to viewport */
-        top: 60px; /* Below the header */
-        left: -100vw; /* HIDDEN by default, using 100vw for full viewport width */
-        width: 100vw; /* Use 100vw for full viewport width */
+        position: fixed; /* Position relative to the viewport */
+        top: 60px; /* Below the fixed header */
+        left: -100vw; /* Hidden by default, slides in from left */
+        width: 100vw; /* Full viewport width */
         height: calc(100vh - 60px); /* Full height below header */
         background-color: var(--header-bg);
-        transition: left 0.3s ease-in-out; /* Changed transition property */
+        transition: left 0.3s ease-in-out; /* CSS transition for non-JS fallback */
         padding: 20px;
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        z-index: 9;
-        overflow-y: auto;
-        overflow-x: hidden; /* Ensure no horizontal scroll within sidebar-nav */
+        z-index: 9; /* Below header, above chat area */
+        overflow-y: auto; /* Allow scrolling within the sidebar nav if content overflows */
+        overflow-x: hidden; /* Prevent horizontal scroll within sidebar nav */
     }
 
     .sidebar.expanded .sidebar-nav {
-        left: 0; /* SHOW when expanded, spanning full viewport width */
+        left: 0; /* Fully visible when expanded */
+    }
+
+    .menu-toggle {
+        display: block; /* Show on mobile */
     }
 
     .chat-area {
         flex-grow: 1;
-        height: calc(100% - 60px); /* Adjust height for fixed sidebar */
+        height: calc(100% - 60px); /* Adjust height for fixed sidebar header */
     }
 
     .message {
