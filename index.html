@@ -3,51 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsive Gun Chatroom</title>
+    <title>Gun Chatroom</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts for a modern look -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <!-- Authentication Screen (Initially visible) -->
-    <div class="auth-screen" id="auth-screen">
-        <div class="auth-container">
-            <h1>Gun Chat</h1>
-            <div class="auth-toggle">
-                <button id="show-login" class="btn secondary-btn active">Login</button>
-                <button id="show-signup" class="btn secondary-btn">Sign Up</button>
-            </div>
-
-            <!-- Login Form -->
-            <form id="login-form" class="auth-form">
-                <h2>Login</h2>
-                <label for="login-alias">Username:</label>
-                <input type="text" id="login-alias" required autocomplete="username">
-                <label for="login-password">Password:</label>
-                <input type="password" id="login-password" required autocomplete="current-password">
-                <button type="submit" class="btn primary-btn">Login</button>
-                <p id="login-message" class="error-message"></p>
-            </form>
-
-            <!-- Sign Up Form (Initially hidden) -->
-            <form id="signup-form" class="auth-form hidden">
-                <h2>Sign Up</h2>
-                <label for="signup-alias">Username:</label>
-                <input type="text" id="signup-alias" required autocomplete="username">
-                <label for="signup-password">Password:</label>
-                <input type="password" id="signup-password" required autocomplete="new-password">
-                <label for="signup-displayname">Display Name:</label>
-                <input type="text" id="signup-displayname" required>
-                <button type="submit" class="btn primary-btn">Create Account</button>
-                <p id="signup-message" class="error-message"></p>
-            </form>
-        </div>
-    </div>
-
-    <!-- Main Chat Application Container (Initially hidden) -->
-    <div class="app-container hidden" id="app-container">
-        <!-- Sidebar for chatroom list, user list, and admin controls -->
+    <!-- Main Chat Application Container -->
+    <div class="app-container" id="app-container">
         <aside class="sidebar">
             <div class="sidebar-header">
                 <h2>Gun Chat</h2>
@@ -168,13 +131,12 @@
         </div>
     </div>
 
-
     <!-- Gun.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
     <!-- GSAP CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <!-- Your custom JavaScript -->
-    <script src="script.js"></script>
+    <!-- Your custom JavaScript for chatroom page -->
+    <script src="chatroom.js"></script>
 </body>
 </html>
