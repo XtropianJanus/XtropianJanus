@@ -1,0 +1,196 @@
+/* Auth Specific Styles */
+:root {
+    /* New UI Colors */
+    --primary-color: #573CFA; /* From image: Primary #573CFA */
+    --secondary-color: #FB8D1A; /* From image: Secondary #FB8D1A */
+    --danger-color: #E8083E; /* From image: Danger #E8083E */
+    --success-color: #02864A; /* From image: Success #02864A */
+    --neutral-color: #1C1A27; /* From image: Neutral #1C1A27 */
+
+    /* Derived colors based on Neutral for dark theme */
+    --bg-color: var(--neutral-color); /* Main background */
+    --header-bg: #272534; /* Slightly lighter neutral for headers/bars */
+    --card-bg: #272534; /* Card backgrounds, similar to header */
+    --input-bg: #323040; /* Input fields, slightly lighter for contrast */
+    --border-color: #403E50; /* Borders, a visible but subtle separation */
+    --text-color: #E0E0E0; /* Light text for dark backgrounds */
+    --subtle-text-color: #A0A0A0; /* For timestamps, etc. */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.auth-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg-color);
+}
+
+.auth-container {
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.auth-container h1 {
+    color: var(--primary-color);
+    font-size: 2.5em;
+    margin-bottom: 20px;
+}
+
+.auth-toggle {
+    display: flex;
+    margin-bottom: 25px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+}
+
+.auth-toggle .btn {
+    flex: 1;
+    margin: 0;
+    border-radius: 0;
+    background-color: transparent;
+    color: var(--text-color);
+    padding: 12px 15px;
+    font-weight: 500;
+    border: none;
+    outline: none;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.auth-toggle .btn.active {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 600;
+}
+
+.auth-toggle .btn:hover:not(.active) {
+    background-color: rgba(87, 60, 250, 0.1);
+    color: var(--primary-color);
+}
+
+.auth-form {
+    margin-top: 20px;
+}
+
+.auth-form h2 {
+    color: white;
+    margin-bottom: 20px;
+    font-size: 1.8em;
+}
+
+.auth-form label {
+    display: block;
+    text-align: left;
+    margin-bottom: 8px;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.auth-form input[type="text"],
+.auth-form input[type="password"] {
+    width: 100%;
+    padding: 12px 15px;
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-size: 1em;
+    transition: border-color 0.2s ease;
+}
+
+.auth-form input[type="text"]:focus,
+.auth-form input[type="password"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.auth-form .primary-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    font-size: 1.1em;
+}
+
+.error-message {
+    color: var(--danger-color);
+    margin-top: 15px;
+    font-size: 0.9em;
+    min-height: 1.5em; /* Reserve space to prevent layout shift */
+}
+
+/* Utility Class */
+.hidden {
+    display: none !important;
+}
+
+/* Common button styles */
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin-top: 10px;
+    width: 100%;
+    text-align: center;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+.primary-btn:hover {
+    background-color: #442ECF; /* Darker shade of primary */
+}
+
+.secondary-btn {
+    background-color: var(--secondary-color);
+    color: white;
+}
+.secondary-btn:hover {
+    background-color: #D67A15; /* Darker shade of secondary */
+}
+
+/* Responsive for auth pages */
+@media (max-width: 768px) {
+    .auth-container {
+        padding: 25px;
+    }
+}
