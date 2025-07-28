@@ -4,11 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = gun.user();
 
     // --- Global Chatroom State ---
-    let currentChatroomRef = null; // Gun reference to the currently active chatroom
-    let currentChatroomID = null;   // ID of the currently active chatroom
-    let currentMessageListener = null; // Stores the listener function for current chatroom messages
-    let currentUserDisplayName = 'Anonymous'; // Default for initial messages or if profile not loaded yet
-    let currentUserRole = 'user'; // Default role
+    let currentChatroomRef = null;
+    let currentChatroomID = null;
+    let currentMessageListener = null;
+    let currentUserDisplayName = 'Anonymous';
+    let currentUserRole = 'user';
 
 
     // --- DOM Elements ---
@@ -29,11 +29,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewPendingBtn = document.getElementById('view-pending-btn');
     const chatroomModal = document.getElementById('chatroom-modal');
     const pendingModal = document.getElementById('pending-modal');
-    const chatroomList = document.getElementById('chatroom-list'); // Reference to the UL for chatrooms
-    const currentChatroomNameHeader = document.getElementById('current-chatroom-name'); // Header for current chatroom name
+    const chatroomList = document.getElementById('chatroom-list');
+    const currentChatroomNameHeader = document.getElementById('current-chatroom-name');
+
+    // NEW ADMIN DOM ELEMENTS
+    const manageUsersBtn = document.getElementById('manage-users-btn');
+    const userManagementModal = document.getElementById('user-management-modal');
+    const userManagementList = document.getElementById('user-management-list');
+    const userManagementMessage = document.getElementById('user-management-message');
+
 
     // --- Helper Functions ---
-    // Function to get current user's role and display name
     async function fetchUserProfile() {
         return new Promise(resolve => {
             if (!user.is) {
@@ -99,7 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         messagesContainer.appendChild(messageDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight; // Keep scrolled to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
         gsap.from(messageDiv, {
             duration: 0.5,
@@ -113,9 +119,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Chatroom Management Functions ---
 
-    // Function to load and display chatrooms in the sidebar
     function loadChatrooms() {
-        chatroomList.innerHTML = ''; // Clear existing list
+        chatroomList.innerHTML = '';
         gun.get('chatrooms').map().on((chatroomData, chatroomID) => {
             if (chatroomData && chatroomData.status === 'approved') {
                 const li = document.createElement('li');
@@ -123,7 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.dataset.chatroomId = chatroomID;
                 li.addEventListener('click', () => switchChatroom(chatroomID, chatroomData.name));
 
-                // Add active class if it's the current chatroom
                 if (chatroomID === currentChatroomID) {
                     li.classList.add('active');
                 }
@@ -132,20 +136,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Function to switch to a different chatroom
     function switchChatroom(newChatroomID, newChatroomName) {
-        // 1. Stop listening to old messages
         if (currentMessageListener) {
-            // Detach the previous listener
             currentChatroomRef.get('messages').map().off(currentMessageListener);
-            currentMessageListener = null; // Clear the listener
+            currentMessageListener = null;
         }
 
-        // 2. Clear current messages from UI
         messagesContainer.innerHTML = '';
         currentChatroomNameHeader.textContent = `#${newChatroomName}`;
 
-        // 3. Update active chatroom in sidebar UI
         document.querySelectorAll('#chatroom-list li').forEach(li => {
             li.classList.remove('active');
             if (li.dataset.chatroomId === newChatroomID) {
@@ -153,25 +152,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 4. Set new current chatroom reference and ID
         currentChatroomID = newChatroomID;
         currentChatroomRef = gun.get('chatrooms').get(newChatroomID);
 
-        // 5. Start listening for new messages in the new chatroom
-        // Store the listener function to be able to turn it off later
         currentMessageListener = (messageData, messageID) => {
-            if (messageData && messageData.text || messageData.imageData || messageData.imageUrl) {
-                // Determine if the message is outgoing (sent by current user)
+            if (messageData && (messageData.text || messageData.imageData || messageData.imageUrl)) {
                 const isOutgoing = user.is && messageData.sender === currentUserDisplayName;
                 addNewMessage(messageData.text, messageData.sender, isOutgoing, messageData.imageData, messageData.imageUrl);
             }
         };
-
-        // Listen for all messages in the current chatroom
-        // Note: .map().on() will fire for existing messages AND new ones.
         currentChatroomRef.get('messages').map().on(currentMessageListener);
 
-        // Close sidebar on mobile after switching
         if (window.innerWidth <= 768 && isSidebarExpanded) {
             gsap.to(sidebarNav, { duration: 0.3, left: '-100vw', ease: "power2.in" });
             sidebar.classList.remove('expanded');
@@ -179,14 +170,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Function to create a default chatroom if none exists
     function createDefaultChatroomIfNeeded() {
         gun.get('chatrooms').once(allChatrooms => {
             let generalExists = false;
+            let generalChatroomID = null;
             if (allChatrooms) {
                 for (const key in allChatrooms) {
                     if (allChatrooms.hasOwnProperty(key) && allChatrooms[key] && allChatrooms[key].name === 'general' && allChatrooms[key].status === 'approved') {
                         generalExists = true;
+                        generalChatroomID = key;
                         break;
                     }
                 }
@@ -194,12 +186,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (!generalExists) {
                 console.log("Creating default #general chatroom...");
-                const generalChatroomID = gun.get('chatrooms').set({
+                gun.get('chatrooms').set({
                     name: 'general',
                     description: 'The main chatroom for everyone!',
-                    creator: 'System', // Or a specific admin's public key
+                    creator: 'System',
                     status: 'approved',
-                    createdAt: Gun.SEA.work(Date.now().toString(), null, null, { name: 'SHA-256' })
+                    createdAt: Date.now()
                 }, (ack) => {
                     if (ack.err) {
                         console.error("Error creating default chatroom:", ack.err);
@@ -215,15 +207,105 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
             } else {
-                // If general exists, find its ID and switch to it
-                gun.get('chatrooms').map().once((chatroomData, chatroomID) => {
-                    if (chatroomData && chatroomData.name === 'general' && chatroomData.status === 'approved') {
-                        switchChatroom(chatroomID, chatroomData.name);
+                switchChatroom(generalChatroomID, 'general');
+            }
+        });
+    }
+
+    // --- User Management Functions (NEW) ---
+
+    // Function to load all user profiles for management
+    function loadUserManagementList() {
+        userManagementList.innerHTML = ''; // Clear existing list
+        userManagementMessage.textContent = ''; // Clear previous messages
+
+        // Iterate over all users known to Gun
+        // This is not efficient for many users in a production app; typically you'd have a backend API
+        // or a dedicated Gun graph structure for user directories.
+        gun.get('~').map().on(async (userAliasData, userPub) => {
+            // userAliasData might be just the alias, or null for revoked users.
+            // We need to get the public key from the alias, then fetch the profile.
+            if (userPub && userPub !== user.is.pub) { // Don't list current user or null entries
+                // Fetch the actual profile data using the public key
+                gun.get('~' + userPub).get('profile').once(profileData => {
+                    if (profileData) {
+                        const displayname = profileData.displayname || userPub.slice(0, 5) + '...';
+                        const role = profileData.role || 'user';
+
+                        const li = document.createElement('li');
+                        li.innerHTML = `
+                            <span>${displayname} (${role})</span>
+                            <select data-user-pub="${userPub}">
+                                <option value="user" ${role === 'user' ? 'selected' : ''}>User</option>
+                                <option value="moderator" ${role === 'moderator' ? 'selected' : ''}>Moderator</option>
+                                <option value="admin" ${role === 'admin' ? 'selected' : ''}>Admin</option>
+                            </select>
+                            <button class="btn primary-btn update-role-btn" data-user-pub="${userPub}">Update</button>
+                        `;
+                        userManagementList.appendChild(li);
                     }
                 });
             }
         });
     }
+
+    // Function to update a user's role
+    userManagementList.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('update-role-btn')) {
+            const targetUserPub = e.target.dataset.userPub;
+            const selectElement = userManagementList.querySelector(`select[data-user-pub="${targetUserPub}"]`);
+            const newRole = selectElement.value;
+
+            if (!user.is || currentUserRole !== 'admin') {
+                userManagementMessage.textContent = "You must be an admin to change roles.";
+                userManagementMessage.style.color = 'var(--danger-color)';
+                return;
+            }
+
+            // Prevent an admin from demoting themselves or changing their own role via this panel
+            if (targetUserPub === user.is.pub) {
+                userManagementMessage.textContent = "You cannot change your own role via this panel.";
+                userManagementMessage.style.color = 'var(--danger-color)';
+                return;
+            }
+
+            // Update the user's profile on Gun
+            gun.get('~' + targetUserPub).get('profile').get('role').put(newRole, (ack) => {
+                if (ack.err) {
+                    console.error("Error updating role:", ack.err);
+                    userManagementMessage.textContent = `Failed to update role for ${targetUserPub.slice(0, 5)}...: ${ack.err}`;
+                    userManagementMessage.style.color = 'var(--danger-color)';
+                } else {
+                    userManagementMessage.textContent = `Role for ${targetUserPub.slice(0, 5)}... updated to ${newRole}!`;
+                    userManagementMessage.style.color = 'var(--success-color)';
+                    // Reload the list to show updated role
+                    loadUserManagementList();
+                }
+            });
+        }
+    });
+
+
+    // --- Admin Bootstrap Function (FOR DEMO ONLY) ---
+    // Expose this function globally for easy access from browser console
+    window.bootstrapAdminRole = async function() {
+        if (!user.is) {
+            console.warn("Please log in first to bootstrap admin role.");
+            return;
+        }
+        console.log("Attempting to set current user as admin...");
+        user.get('profile').get('role').put('admin', (ack) => {
+            if (ack.err) {
+                console.error("Failed to set role to admin:", ack.err);
+                alert("Failed to set role to admin. Check console for details.");
+            } else {
+                console.log("Role set to admin successfully! Please refresh the page.");
+                alert("Your role has been set to admin. Please refresh the page to see changes.");
+                // Force a reload to re-fetch profile and update UI
+                location.reload();
+            }
+        });
+    };
 
 
     // --- Initial Check for Login Status ---
@@ -258,8 +340,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 delay: 0.9
             });
 
-            loadChatrooms(); // Load approved chatrooms into the sidebar
-            createDefaultChatroomIfNeeded(); // Ensure a default chatroom exists and switch to it
+            loadChatrooms();
+            createDefaultChatroomIfNeeded();
         }
     });
 
@@ -267,7 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
     logoutBtn.addEventListener('click', () => {
         user.leave();
         console.log("Logged out, redirecting to login page.");
-        window.location.href = 'login.html'; // Redirect to login page
+        window.location.href = 'login.html';
     });
 
     // --- Chat App Event Listeners (with login checks) ---
@@ -302,17 +384,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (text) {
-            // Send message to Gun.js
             currentChatroomRef.get('messages').set({
                 text: text,
-                sender: currentUserDisplayName, // Use the fetched display name
+                sender: currentUserDisplayName,
                 timestamp: Date.now()
             }, (ack) => {
                 if (ack.err) {
                     console.error("Error sending message:", ack.err);
                 } else {
                     console.log("Message sent to Gun!");
-                    // The addNewMessage will be triggered by the Gun.js listener
                 }
             });
             messageInput.value = '';
@@ -340,7 +420,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const imageDataUrl = e.target.result;
-                // Send image data (Base64) to Gun.js
                 currentChatroomRef.get('messages').set({
                     imageData: imageDataUrl,
                     sender: currentUserDisplayName,
@@ -350,7 +429,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error("Error sending image:", ack.err);
                     } else {
                         console.log("Image sent to Gun!");
-                        // The addNewMessage will be triggered by the Gun.js listener
                     }
                 });
             };
@@ -364,7 +442,7 @@ document.addEventListener('DOMContentLoaded', () => {
         messageInput.style.height = messageInput.scrollHeight + 'px';
     });
 
-    // Modals (with login/role checks)
+    // Modals
     function openModal(modalElement) {
         modalElement.style.display = 'flex';
         gsap.to(modalElement.querySelector('.modal-content'), {
@@ -392,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Please log in to create a chatroom.");
             return;
         }
-        if (currentUserRole !== 'admin' && currentUserRole !== 'moderator' && currentUserRole !== 'user') { // Allow regular users to request creation
+        if (currentUserRole !== 'admin' && currentUserRole !== 'moderator' && currentUserRole !== 'user') {
              alert("You do not have permission to create chatrooms.");
              return;
         }
@@ -408,15 +486,14 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("You do not have permission to view pending chatrooms.");
             return;
         }
-        // In a real app, you'd fetch pending rooms here from Gun.js
         const pendingList = document.getElementById('pending-list');
-        pendingList.innerHTML = ''; // Clear existing dummy pending items
-        
+        pendingList.innerHTML = '';
+
         gun.get('chatrooms').map().on((chatroomData, chatroomID) => {
             if (chatroomData && chatroomData.status === 'pending') {
                 const li = document.createElement('li');
                 li.innerHTML = `
-                    <span>#${chatroomData.name} (by ${chatroomData.creator ? chatroomData.creator.slice(0, 5) + '...' : 'Unknown'})</span>
+                    <span>#${chatroomData.name} (by ${chatroomData.creator || 'Unknown'})</span>
                     <button class="btn success-btn approve-btn" data-chatroom-id="${chatroomID}">Approve</button>
                     <button class="btn danger-btn reject-btn" data-chatroom-id="${chatroomID}">Reject</button>
                 `;
@@ -428,13 +505,24 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal(pendingModal);
     });
 
+    // NEW: Manage Users Button Click
+    manageUsersBtn.addEventListener('click', async () => {
+        if (!user.is || currentUserRole !== 'admin') {
+            alert("You must be an admin to manage users.");
+            return;
+        }
+        loadUserManagementList();
+        openModal(userManagementModal);
+    });
+
+
     document.querySelectorAll('.close-button').forEach(button => {
         button.addEventListener('click', (e) => {
             closeModal(e.target.closest('.modal'));
         });
     });
 
-    [chatroomModal, pendingModal].forEach(modal => {
+    [chatroomModal, pendingModal, userManagementModal].forEach(modal => { // Added userManagementModal
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 closeModal(modal);
@@ -457,29 +545,37 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Check if chatroom with this name already exists
-        gun.get('chatrooms').map().once((data, key) => {
+        let nameExists = false;
+        gun.get('chatrooms').map().once((data) => {
             if (data && data.name === chatroomName) {
-                alert(`Chatroom with name "${chatroomName}" already exists. Please choose a different name.`);
-                return;
+                nameExists = true;
             }
         });
 
-        gun.get('chatrooms').set({
-            name: chatroomName,
-            description: chatroomDesc,
-            creator: currentUserDisplayName, // Use display name as creator
-            status: 'pending', // Requires approval
-            createdAt: Date.now() // Use simple timestamp for sorting/uniqueness for now
-        }, (ack) => {
-            if (ack.err) {
-                console.error("Error requesting chatroom creation:", ack.err);
-                alert("Failed to request chatroom. Please try again.");
-            } else {
-                console.log(`Chatroom "${chatroomName}" request submitted successfully. Waiting for approval.`);
-                alert(`Chatroom "${chatroomName}" submitted for approval!`);
-                closeModal(chatroomModal);
+        // Small delay to allow 'once' to complete. In a real app, use a Promise/async-await pattern
+        setTimeout(() => {
+            if (nameExists) {
+                alert(`Chatroom with name "${chatroomName}" already exists. Please choose a different name.`);
+                return;
             }
-        });
+
+            gun.get('chatrooms').set({
+                name: chatroomName,
+                description: chatroomDesc,
+                creator: currentUserDisplayName,
+                status: 'pending',
+                createdAt: Date.now()
+            }, (ack) => {
+                if (ack.err) {
+                    console.error("Error requesting chatroom creation:", ack.err);
+                    alert("Failed to request chatroom. Please try again.");
+                } else {
+                    console.log(`Chatroom "${chatroomName}" request submitted successfully. Waiting for approval.`);
+                    alert(`Chatroom "${chatroomName}" submitted for approval!`);
+                    closeModal(chatroomModal);
+                }
+            });
+        }, 100); // Short delay
     });
 
     document.getElementById('pending-list').addEventListener('click', async (e) => {
@@ -505,7 +601,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     gsap.to(e.target.closest('li'), {
                         duration: 0.3, opacity: 0, x: 50, ease: "power2.in", onComplete: () => {
                             e.target.closest('li').remove();
-                            loadChatrooms(); // Reload chatrooms to show the new one
+                            loadChatrooms();
                         }
                     });
                 }
