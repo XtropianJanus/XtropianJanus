@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up for Gun Chat</title>
+    <link rel="stylesheet" href="auth.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="auth-screen">
+        <div class="auth-container">
+            <h1>Gun Chat</h1>
+            <div class="auth-toggle">
+                <button id="show-login" class="btn secondary-btn">Login</button>
+                <button id="show-signup" class="btn secondary-btn active">Sign Up</button>
+            </div>
+
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="auth-form">
+                <h2>Sign Up</h2>
+                <label for="signup-alias">Username:</label>
+                <input type="text" id="signup-alias" required autocomplete="username">
+                <label for="signup-password">Password:</label>
+                <input type="password" id="signup-password" required autocomplete="new-password">
+                <label for="signup-displayname">Display Name:</label>
+                <input type="text" id="signup-displayname" required>
+                <button type="submit" class="btn primary-btn">Create Account</button>
+                <p id="signup-message" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gun.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+    <!-- Your custom JavaScript for signup page -->
+    <script src="signup.js"></script>
+</body>
+</html>
