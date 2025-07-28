@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login to Gun Chat</title>
+    <link rel="stylesheet" href="auth.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="auth-screen">
+        <div class="auth-container">
+            <h1>Gun Chat</h1>
+            <div class="auth-toggle">
+                <button id="show-login" class="btn secondary-btn active">Login</button>
+                <button id="show-signup" class="btn secondary-btn">Sign Up</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+                <h2>Login</h2>
+                <label for="login-alias">Username:</label>
+                <input type="text" id="login-alias" required autocomplete="username">
+                <label for="login-password">Password:</label>
+                <input type="password" id="login-password" required autocomplete="current-password">
+                <button type="submit" class="btn primary-btn">Login</button>
+                <p id="login-message" class="error-message"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Gun.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gun/sea.js"></script>
+    <!-- Your custom JavaScript for login page -->
+    <script src="login.js"></script>
+</body>
+</html>
