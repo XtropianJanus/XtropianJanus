@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const signupDisplaynameInput = document.getElementById('signup-displayname');
     const signupMessage = document.getElementById('signup-message');
     const showLoginBtn = document.getElementById('show-login');
-    const showSignupBtn = document.getElementById('show-signup'); // Keep reference for active class
+    const showSignupBtn = document.getElementById('show-signup');
 
     // Helper to display messages
     function displayAuthMessage(element, message, isError = true) {
@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        displayAuthMessage(signupMessage, "Creating account...", false); // Indicate loading
+        displayAuthMessage(signupMessage, "Creating account...", false);
 
         user.create(alias, password, (ack) => {
             if (ack.err) {
@@ -50,7 +50,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (putAck.err) console.error("Error saving profile:", putAck.err);
                 });
                 displayAuthMessage(signupMessage, "Account created! Redirecting to login...", false);
-                // Redirect to login page after successful creation
                 window.location.href = 'login.html';
             }
         });
@@ -58,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Optional: Check if already logged in on signup page and redirect
     user.recall({ sessionStorage: true }, (ack) => {
-        if (user.is) { // If user.is is not null/undefined, a session is active
+        if (user.is) {
             console.log("Already logged in, redirecting to chatroom.");
             window.location.href = 'index.html';
         }
