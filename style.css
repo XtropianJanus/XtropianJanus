@@ -1,0 +1,628 @@
+/* Basic Reset & Variables */
+:root {
+    /* New UI Colors */
+    --primary-color: #573CFA; /* From image: Primary #573CFA */
+    --secondary-color: #FB8D1A; /* From image: Secondary #FB8D1A */
+    --danger-color: #E8083E; /* From image: Danger #E8083E */
+    --success-color: #02864A; /* From image: Success #02864A */
+    --neutral-color: #1C1A27; /* From image: Neutral #1C1A27 */
+
+    /* Derived colors based on Neutral for dark theme */
+    --bg-color: var(--neutral-color); /* Main background */
+    --header-bg: #272534; /* Slightly lighter neutral for headers/bars */
+    --card-bg: #272534; /* Card backgrounds, similar to header */
+    --input-bg: #323040; /* Input fields, slightly lighter for contrast */
+    --border-color: #403E50; /* Borders, a visible but subtle separation */
+    --text-color: #E0E0E0; /* Light text for dark backgrounds */
+    --subtle-text-color: #A0A0A0; /* For timestamps, etc. */
+
+    /* Scrollbar colors adjusted to new neutral */
+    --scroll-thumb: #504D60;
+    --scroll-track: #272534;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden; /* Prevent scrollbar on initial load animations */
+}
+
+/* App Container */
+.app-container {
+    display: flex;
+    width: 95vw;
+    height: 95vh;
+    max-width: 1400px;
+    max-height: 900px;
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Sidebar */
+.sidebar {
+    width: 300px;
+    min-width: 250px;
+    background-color: var(--header-bg);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border-color);
+    transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.sidebar-header h2 {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.8em;
+}
+
+.menu-toggle {
+    display: none; /* Hidden on desktop */
+    background: none;
+    border: none;
+    color: var(--text-color);
+    font-size: 1.5em;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.sidebar-nav {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 10px; /* For scrollbar */
+}
+
+.sidebar-nav::-webkit-scrollbar {
+    width: 8px;
+}
+.sidebar-nav::-webkit-scrollbar-track {
+    background: var(--scroll-track);
+    border-radius: 10px;
+}
+.sidebar-nav::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border-radius: 10px;
+}
+
+.sidebar-nav h3 {
+    color: var(--secondary-color);
+    font-size: 1.1em;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar-nav li {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 6px;
+    margin-bottom: 5px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav li:hover {
+    /* Using rgba for primary-color with 0.1 opacity */
+    background-color: rgba(87, 60, 250, 0.1);
+    color: var(--primary-color);
+}
+
+.sidebar-nav li.active {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+}
+
+.sidebar-nav hr {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 20px 0;
+}
+
+.admin-section {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 15px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 600;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    margin-top: 10px;
+    width: 100%;
+    text-align: center;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+.primary-btn:hover {
+    background-color: #442ECF; /* Darker shade of primary */
+}
+
+.secondary-btn {
+    background-color: var(--secondary-color);
+    color: white;
+}
+.secondary-btn:hover {
+    background-color: #D67A15; /* Darker shade of secondary */
+}
+
+.success-btn {
+    background-color: var(--success-color);
+    color: white;
+}
+.success-btn:hover {
+    background-color: #016B3A; /* Darker shade of success */
+}
+
+.danger-btn {
+    background-color: var(--danger-color);
+    color: white;
+}
+.danger-btn:hover {
+    background-color: #B80632; /* Darker shade of danger */
+}
+
+.icon-btn {
+    background: none;
+    color: var(--text-color);
+    font-size: 1.2em;
+    padding: 8px;
+    width: auto;
+    margin: 0 5px;
+    display: flex; /* To center icon */
+    align-items: center;
+    justify-content: center;
+}
+.icon-btn:hover {
+    color: var(--primary-color);
+    background-color: rgba(87, 60, 250, 0.1); /* Using rgba for primary-color */
+}
+
+/* Chat Area */
+.chat-area {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--card-bg);
+}
+
+.chat-header {
+    background-color: var(--header-bg);
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.chat-header h1 {
+    font-size: 1.5em;
+    color: white;
+}
+
+.messages-container {
+    flex-grow: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column; /* For proper message flow */
+}
+
+.messages-container::-webkit-scrollbar {
+    width: 8px;
+}
+.messages-container::-webkit-scrollbar-track {
+    background: var(--scroll-track);
+}
+.messages-container::-webkit-scrollbar-thumb {
+    background: var(--scroll-thumb);
+    border-radius: 10px;
+}
+
+/* Message Styling */
+.message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    max-width: 80%; /* Limit message width */
+    transform: translateY(0); /* For GSAP */
+    opacity: 1; /* For GSAP */
+}
+
+.message-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: 600;
+    font-size: 1.1em;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+.message-content {
+    background-color: var(--input-bg);
+    padding: 10px 15px;
+    border-radius: 15px;
+    margin-left: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    position: relative;
+    max-width: calc(100% - 60px); /* Avatar width + margin */
+}
+
+.message-sender {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 5px;
+    display: block;
+}
+
+.message-content p {
+    margin: 0;
+    word-wrap: break-word; /* Ensure long words wrap */
+}
+
+/* Link styling within messages */
+.message-content a {
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+}
+.message-content a:hover {
+    text-decoration: underline;
+}
+
+.message-timestamp {
+    font-size: 0.75em;
+    color: var(--subtle-text-color);
+    margin-top: 5px;
+    display: block;
+    text-align: right;
+}
+
+/* Image Messages */
+.message-image-wrapper {
+    margin-top: 10px;
+    border-radius: 8px;
+    overflow: hidden;
+    max-width: 250px; /* Max width for images */
+    background-color: var(--border-color); /* Placeholder background */
+    display: block; /* Ensure it takes up space */
+}
+
+.message-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+/* Optional: for loading state or broken images */
+.message-image:not([src]) {
+    min-height: 100px; /* Give it some height even if no src */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--subtle-text-color);
+    font-size: 0.9em;
+}
+.message-image:not([src])::after {
+    content: "Loading image...";
+}
+
+
+.message.outgoing {
+    align-self: flex-end; /* Align to the right */
+    flex-direction: row-reverse; /* Swap avatar and content */
+}
+
+.message.outgoing .message-avatar {
+    margin-left: 10px;
+    margin-right: 0;
+    background-color: var(--secondary-color); /* Different color for outgoing */
+}
+
+.message.outgoing .message-content {
+    background-color: var(--secondary-color);
+    color: white;
+    margin-left: 0;
+    margin-right: 10px;
+}
+
+.message.outgoing .message-sender {
+    color: white;
+    text-align: right;
+}
+
+.message.outgoing .message-timestamp {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+
+/* Message Input Area */
+.message-input-area {
+    display: flex;
+    padding: 15px 20px;
+    border-top: 1px solid var(--border-color);
+    background-color: var(--header-bg);
+    gap: 10px;
+    align-items: flex-end; /* Align items to the bottom, useful for growing textarea */
+}
+
+.message-input-area textarea {
+    flex-grow: 1;
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 15px;
+    color: var(--text-color);
+    font-size: 1em;
+    resize: none; /* Disable manual resize */
+    height: 45px; /* Fixed height for single line */
+    min-height: 45px;
+    max-height: 100px; /* Allow it to grow to a max of 3 lines approx */
+    overflow-y: auto;
+    transition: border-color 0.2s ease;
+}
+
+.message-input-area textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.message-input-area .primary-btn {
+    flex-shrink: 0;
+    width: 100px;
+    margin-top: 0; /* Override default button margin-top */
+    align-self: flex-end; /* Align to the bottom of the input area */
+}
+
+/* Modals */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    margin: auto;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    transform: scale(0.8); /* Initial state for GSAP */
+    opacity: 0; /* Initial state for GSAP */
+}
+
+.close-button {
+    color: var(--text-color);
+    font-size: 28px;
+    font-weight: bold;
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: var(--danger-color);
+}
+
+.modal h2 {
+    color: white;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.modal form label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.modal form input[type="text"],
+.modal form textarea {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-size: 1em;
+}
+
+.modal form input[type="text"]:focus,
+.modal form textarea:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.modal form .primary-btn {
+    margin-top: 20px;
+}
+
+#pending-list {
+    list-style: none;
+    padding: 0;
+}
+
+#pending-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--input-bg);
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border-color);
+}
+
+#pending-list li span {
+    flex-grow: 1;
+    margin-right: 10px;
+    font-weight: 500;
+}
+
+#pending-list li .approve-btn,
+#pending-list li .reject-btn {
+    width: auto;
+    padding: 8px 12px;
+    margin: 0 5px;
+    font-size: 0.8em;
+}
+
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+    .app-container {
+        width: 100vw;
+        height: 100vh;
+        max-width: none;
+        max-height: none;
+        border-radius: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-container {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: 60px; /* Collapsed height */
+        min-width: unset;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+        position: relative; /* For the absolute positioned nav */
+        padding: 10px 20px;
+        z-index: 10;
+        transform: translateY(0); /* Ensure it's visible */
+    }
+
+    .sidebar.collapsed {
+        /* GSAP will animate this */
+        /* transform: translateX(-100%); */
+    }
+
+    .sidebar-header {
+        margin-bottom: 0;
+    }
+
+    .sidebar-header h2 {
+        font-size: 1.5em;
+    }
+
+    .menu-toggle {
+        display: block; /* Show on mobile */
+    }
+
+    .sidebar-nav {
+        position: absolute;
+        top: 60px; /* Below the header */
+        left: 0;
+        width: 100%;
+        height: calc(100vh - 60px); /* Full height below header */
+        background-color: var(--header-bg);
+        transform: translateX(-100%); /* Hidden by default */
+        transition: transform 0.3s ease-in-out;
+        padding: 20px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        z-index: 9;
+        overflow-y: auto;
+    }
+
+    .sidebar.expanded .sidebar-nav {
+        transform: translateX(0); /* Show when expanded */
+    }
+
+    .chat-area {
+        flex-grow: 1;
+        height: calc(100% - 60px); /* Adjust height for fixed sidebar */
+    }
+
+    .message {
+        max-width: 95%; /* More width on smaller screens */
+    }
+
+    .message-input-area {
+        flex-wrap: wrap; /* Allow input and button to wrap */
+        padding: 10px 15px;
+    }
+
+    .message-input-area textarea {
+        height: 40px;
+        min-height: 40px;
+        max-height: 80px;
+        margin-bottom: 10px;
+    }
+
+    .message-input-area .primary-btn {
+        width: 100%;
+        margin-top: 0;
+    }
+    .message-input-area .icon-btn {
+        margin-left: 0;
+        margin-right: 10px;
+        margin-bottom: 10px; /* To align with textarea if it wraps */
+    }
+
+    .modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+}
