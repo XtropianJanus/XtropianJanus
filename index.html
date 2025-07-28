@@ -25,9 +25,6 @@
                 <h3>Chatrooms</h3>
                 <ul id="chatroom-list">
                     <!-- Chatrooms will be dynamically added here -->
-                    <li class="active">#general</li>
-                    <li>#development</li>
-                    <li>#random</li>
                 </ul>
                 <button id="create-chatroom-btn" class="btn primary-btn">Create New Chatroom</button>
 
@@ -36,9 +33,7 @@
                 <h3>Users Online</h3>
                 <ul id="user-list">
                     <!-- Users will be dynamically added here -->
-                    <li>Alice</li>
-                    <li>Bob</li>
-                    <li class="current-user">You (Charlie)</li>
+                    <!-- In a real app, this would be updated from Gun's presence data -->
                 </ul>
 
                 <hr>
@@ -46,7 +41,7 @@
                 <div class="admin-section" id="admin-section">
                     <h3>Admin/Mod Panel</h3>
                     <button id="view-pending-btn" class="btn secondary-btn">View Pending Chatrooms</button>
-                    <!-- More admin controls here -->
+                    <button id="manage-users-btn" class="btn secondary-btn">Manage Users</button>
                 </div>
             </nav>
         </aside>
@@ -63,33 +58,6 @@
 
             <div class="messages-container" id="messages-container">
                 <!-- Messages will be dynamically added here by JavaScript -->
-                <div class="message incoming">
-                    <div class="message-avatar">A</div>
-                    <div class="message-content">
-                        <span class="message-sender">Alice</span>
-                        <p>Hey everyone, welcome to the chat!</p>
-                        <span class="message-timestamp">10:00 AM</span>
-                    </div>
-                </div>
-                <div class="message outgoing">
-                    <div class="message-avatar">C</div>
-                    <div class="message-content">
-                        <span class="message-sender">You</span>
-                        <p>Thanks, Alice! Looking forward to this. Check out this link: https://gsap.com</p>
-                        <span class="message-timestamp">10:01 AM</span>
-                    </div>
-                </div>
-                <div class="message incoming">
-                    <div class="message-avatar">B</div>
-                    <div class="message-content">
-                        <span class="message-sender">Bob</span>
-                        <p>Cool! I'm sharing a pic from my trip:</p>
-                        <div class="message-image-wrapper">
-                            <img src="https://via.placeholder.com/200x150?text=Sample+Image" alt="Sample Image" class="message-image">
-                        </div>
-                        <span class="message-timestamp">10:02 AM</span>
-                    </div>
-                </div>
             </div>
 
             <div class="message-input-area">
@@ -101,7 +69,7 @@
         </main>
     </div>
 
-    <!-- Modals (unchanged HTML) -->
+    <!-- Modals -->
     <div id="chatroom-modal" class="modal">
         <div class="modal-content">
             <span class="close-button">&times;</span>
@@ -122,14 +90,22 @@
             <h2>Pending Chatroom Approvals</h2>
             <ul id="pending-list">
                 <!-- Pending chatrooms will be dynamically added here -->
-                <li>
-                    <span>#new-games (by Bob)</span>
-                    <button class="btn success-btn approve-btn">Approve</button>
-                    <button class="btn danger-btn reject-btn">Reject</button>
-                </li>
             </ul>
         </div>
     </div>
+
+    <!-- User Management Modal -->
+    <div id="user-management-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Manage Users</h2>
+            <ul id="user-management-list">
+                <!-- Users and their roles will be dynamically added here -->
+            </ul>
+            <p id="user-management-message" class="error-message"></p>
+        </div>
+    </div>
+
 
     <!-- Gun.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
