@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginPasswordInput = document.getElementById('login-password');
     const loginMessage = document.getElementById('login-message');
     const showSignupBtn = document.getElementById('show-signup');
-    const showLoginBtn = document.getElementById('show-login'); // Keep reference for active class
+    const showLoginBtn = document.getElementById('show-login');
 
     // Helper to display messages
     function displayAuthMessage(element, message, isError = true) {
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const alias = loginAliasInput.value;
         const password = loginPasswordInput.value;
 
-        displayAuthMessage(loginMessage, "Logging in...", false); // Indicate loading
+        displayAuthMessage(loginMessage, "Logging in...", false);
 
         user.auth(alias, password, (ack) => {
             if (ack.err) {
@@ -39,7 +39,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 console.log("Logged in as:", ack.pub);
                 displayAuthMessage(loginMessage, "Login successful! Redirecting...", false);
-                // Redirect to the main chatroom page
                 window.location.href = 'index.html';
             }
         });
@@ -47,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Optional: Check if already logged in on login page and redirect
     user.recall({ sessionStorage: true }, (ack) => {
-        if (user.is) { // If user.is is not null/undefined, a session is active
+        if (user.is) {
             console.log("Already logged in, redirecting to chatroom.");
             window.location.href = 'index.html';
         }
