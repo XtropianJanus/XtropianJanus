@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const messagesContainer = document.getElementById('messages-container');
     const sendMessageBtn = document.getElementById('send-message-btn');
     const messageInput = document.getElementById('message-input');
-    const attachBtn = document.getElementById('attach-btn'); // New
-    const imageUploadInput = document.getElementById('image-upload'); // New
+    const attachBtn = document.getElementById('attach-btn');
+    const imageUploadInput = document.getElementById('image-upload');
     const createChatroomBtn = document.getElementById('create-chatroom-btn');
     const viewPendingBtn = document.getElementById('view-pending-btn');
     const chatroomModal = document.getElementById('chatroom-modal');
@@ -45,14 +45,14 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isSidebarExpanded) {
             gsap.to(sidebarNav, {
                 duration: 0.3,
-                x: '0%',
+                left: '0%', // Changed from x to left
                 ease: "power2.out"
             });
             sidebar.classList.add('expanded');
         } else {
             gsap.to(sidebarNav, {
                 duration: 0.3,
-                x: '-100%',
+                left: '-100%', // Changed from x to left
                 ease: "power2.in"
             });
             sidebar.classList.remove('expanded');
@@ -61,10 +61,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Close sidebar if expanded and clicking outside on mobile (simplified)
     document.body.addEventListener('click', (e) => {
+        // Check if the click is outside the sidebar AND the sidebar is expanded AND it's a mobile viewport
         if (isSidebarExpanded && !sidebar.contains(e.target) && window.innerWidth <= 768) {
             gsap.to(sidebarNav, {
                 duration: 0.3,
-                x: '-100%',
+                left: '-100%', // Changed from x to left
                 ease: "power2.in"
             });
             sidebar.classList.remove('expanded');
@@ -74,19 +75,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper function to convert URLs to clickable links
     function linkify(text) {
-        // Regex to find URLs (http, https, ftp, www. and .com/.net etc.)
         const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+?\.[^\s]+)|([a-zA-Z0-9.\-]+?\.(com|org|net|gov|edu|io|co|uk|dev|app)[^\s]*)/g;
         return text.replace(urlRegex, (url) => {
             let fullUrl = url;
             if (!url.match(/^(https?:\/\/|ftp:\/\/)/)) {
-                fullUrl = 'http://' + url; // Prepend http if missing
+                fullUrl = 'http://' + url;
             }
             return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer">${url}</a>`;
         });
     }
 
     // 3. New Message Entry Animation
-    // Now accepts imageData (Base64) or imageUrl (external URL)
     function addNewMessage(messageContent, sender, isOutgoing = false, imageData = null, imageUrl = null) {
         const messageDiv = document.createElement('div');
         messageDiv.classList.add('message');
@@ -105,7 +104,6 @@ document.addEventListener('DOMContentLoaded', () => {
             contentHTML += `<div class="message-image-wrapper"><img src="${imgSrc}" alt="Shared Image" class="message-image"></div>`;
         }
         if (messageContent) {
-            // Apply linkify only to text content, not image data
             contentHTML += `<p>${linkify(messageContent)}</p>`;
         }
 
@@ -118,72 +116,58 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
 
-        // Append to container first (hidden for animation)
         messagesContainer.appendChild(messageDiv);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to bottom immediately
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-        // GSAP animation for the new message
         gsap.from(messageDiv, {
             duration: 0.5,
             y: 30,
             opacity: 0,
             scale: 0.9,
             ease: "back.out(1.7)",
-            clearProps: "all" // Remove inline styles after animation
+            clearProps: "all"
         });
     }
 
-    // Example: Send message button click
     sendMessageBtn.addEventListener('click', () => {
         const text = messageInput.value.trim();
         if (text) {
-            addNewMessage(text, 'You', true); // Simulating an outgoing message
-            // Here you would integrate with Gun.js to send the message
-            // gun.get('chatrooms').get(currentChatroomId).get('messages').set({ text: text, sender: 'You', type: 'text' });
+            addNewMessage(text, 'You', true);
             messageInput.value = '';
-            messageInput.style.height = '45px'; // Reset textarea height
+            messageInput.style.height = '45px';
         }
     });
 
-    // Logic for Image Upload
     attachBtn.addEventListener('click', () => {
-        imageUploadInput.click(); // Trigger the hidden file input click
+        imageUploadInput.click();
     });
 
     imageUploadInput.addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (file) {
-            if (file.size > 2 * 1024 * 1024) { // Limit to 2MB for Base64 demo
+            if (file.size > 2 * 1024 * 1024) {
                 alert("File is too large. For production, images should be uploaded to a server and their URLs shared.");
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = (e) => {
-                const imageDataUrl = e.target.result; // This is the Base64 string
-                addNewMessage('', 'You', true, imageDataUrl); // Send as an image message
-                // Here you would integrate with Gun.js:
-                // gun.get('chatrooms').get(currentChatroomId).get('messages').set({
-                //     sender: 'You',
-                //     type: 'image',
-                //     imageData: imageDataUrl // Or imageUrl if uploaded to a service
-                // });
+                const imageDataUrl = e.target.result;
+                addNewMessage('', 'You', true, imageDataUrl);
             };
-            reader.readAsDataURL(file); // Read file as Base64 Data URL
+            reader.readAsDataURL(file);
         }
-        imageUploadInput.value = ''; // Clear the input so same file can be selected again
+        imageUploadInput.value = '';
     });
 
-
-    // Adjust textarea height dynamically
     messageInput.addEventListener('input', () => {
         messageInput.style.height = 'auto';
         messageInput.style.height = messageInput.scrollHeight + 'px';
     });
 
-    // 4. Modal Open/Close Animations
+    // 4. Modal Open/Close Animations (no changes here)
     function openModal(modalElement) {
-        modalElement.style.display = 'flex'; // Make it display flex for centering
+        modalElement.style.display = 'flex';
         gsap.to(modalElement.querySelector('.modal-content'), {
             duration: 0.4,
             scale: 1,
@@ -199,16 +183,13 @@ document.addEventListener('DOMContentLoaded', () => {
             opacity: 0,
             ease: "power2.in",
             onComplete: () => {
-                modalElement.style.display = 'none'; // Hide after animation
+                modalElement.style.display = 'none';
             }
         });
     }
 
-    // Event listeners for modals
     createChatroomBtn.addEventListener('click', () => openModal(chatroomModal));
     viewPendingBtn.addEventListener('click', () => {
-        // In a real app, you'd fetch pending rooms here
-        // For demonstration, let's add a dummy pending item if none exists
         const pendingList = document.getElementById('pending-list');
         if (pendingList.children.length === 0) {
              const dummyItem = document.createElement('li');
@@ -218,20 +199,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button class="btn danger-btn reject-btn">Reject</button>
              `;
              pendingList.appendChild(dummyItem);
-             // GSAP animation for newly added pending item
              gsap.from(dummyItem, { duration: 0.4, y: 20, opacity: 0, ease: "power2.out" });
         }
         openModal(pendingModal);
     });
 
-    // Close buttons for modals
     document.querySelectorAll('.close-button').forEach(button => {
         button.addEventListener('click', (e) => {
             closeModal(e.target.closest('.modal'));
         });
     });
 
-    // Close modal when clicking outside content
     [chatroomModal, pendingModal].forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -240,7 +218,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Form submission for chatroom creation (dummy)
     document.getElementById('create-chatroom-form').addEventListener('submit', (e) => {
         e.preventDefault();
         const chatroomName = document.getElementById('chatroom-name').value;
@@ -248,28 +225,23 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Requesting chatroom: ${chatroomName}, Description: ${chatroomDesc}`);
         alert(`Chatroom "${chatroomName}" submitted for approval!`);
         closeModal(chatroomModal);
-        // Integrate with gun.js requestChatroomCreation(chatroomName, chatroomDesc);
     });
 
-    // Dummy Approve/Reject logic for pending list
     document.getElementById('pending-list').addEventListener('click', (e) => {
         if (e.target.classList.contains('approve-btn')) {
             alert('Chatroom Approved!');
-            // Integrate with gun.js approveChatroom(id);
             gsap.to(e.target.closest('li'), {
                 duration: 0.3, opacity: 0, x: 50, ease: "power2.in", onComplete: () => e.target.closest('li').remove()
             });
         } else if (e.target.classList.contains('reject-btn')) {
             alert('Chatroom Rejected!');
-            // Integrate with gun.js rejectChatroom(id);
             gsap.to(e.target.closest('li'), {
                 duration: 0.3, opacity: 0, x: -50, ease: "power2.in", onComplete: () => e.target.closest('li').remove()
             });
         }
     });
 
-    // Initial messages (demonstrating link and image)
-    // Remove existing dummy messages from HTML to let JS add them
+    // Initial messages
     messagesContainer.innerHTML = '';
     addNewMessage('Hey everyone, welcome to the chat!', 'Alice', false);
     addNewMessage('Thanks, Alice! Looking forward to this. Check out this link: https://gsap.com', 'You', true);
